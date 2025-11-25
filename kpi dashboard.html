@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KPI Performance Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-green: #2ecc71;
+            --dark-green: #27ae60;
+            --light-green: #a3e4a3;
+            --pale-green: #e8f6e8;
+            --white: #ffffff;
+            --light-gray: #f5f5f5;
+            --medium-gray: #e0e0e0;
+            --dark-text: #2c3e50;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --transition: all 0.3s ease;
+            --border-radius: 12px;
+        }
+        
+        .dark-mode {
+            --primary-green: #2ecc71;
+            --dark-green: #27ae60;
+            --light-green: #a3e4a3;
+            --pale-green: #1a2a1a;
+            --white: #2c3e50;
+            --light-gray: #34495e;
+            --medium-gray: #4a6572;
+            --dark-text: #ecf0f1;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, var(--pale-green) 0%, var(--white) 100%);
+            color: var(--dark-text);
+            padding: 0;
+            min-height: 100vh;
+            transition: var(--transition);
+        }
+        
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            padding-bottom: 100px; /* Space for bottom navigation */
+        }
+        
+        header {
+            background: var(--white);
+            box-shadow: var(--card-shadow);
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-radius: var(--border-radius);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+        
+        h1 {
+            color: var(--dark-green);
+            margin-bottom: 0;
+            font-size: 28px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .current-date {
+            background: var(--primary-green);
+            color: var(--white);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .current-date:hover {
+            background: var(--dark-green);
+        }
+        
+        .date-input {
+            background: var(--white);
+            color: var(--dark-text);
+            border: 2px solid var(--primary-green);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: 500;
+            width: 200px;
+            text-align: center;
+        }
+        
+        .theme-toggle {
+            background: var(--primary-green);
+            color: var(--white);
+            border: none;
+            border-radius: 20px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .theme-toggle:hover {
+            background: var(--dark-green);
+        }
+        
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .page.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+        
+        .chart-container {
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-category {
+            margin-bottom: 25px;
+            padding: 20px;
+            border-radius: var(--border-radius);
+        }
+        
+        .summary-category h3 {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            color: var(--dark-green);
+        }
+        
+        .summary-category h3 i {
+            margin-right: 10px;
+        }
+        
+        .strong {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.1) 0%, rgba(46, 204, 113, 0.05) 100%);
+            border-left: 5px solid var(--primary-green);
+        }
+        
+        .average {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%);
+            border-left: 5px solid #f39c12;
+        }
+        
+        .weak {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.1) 0%, rgba(231, 76, 60, 0.05) 100%);
+            border-left: 5px solid #e74c3c;
+        }
+        
+        .summary-list {
+            list-style-type: none;
+        }
+        
+        .summary-list li {
+            padding: 12px 0;
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            align-items: center;
+        }
+        
+        .summary-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .data-table th, .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .data-table th {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            font-weight: 600;
+        }
+        
+        .data-table tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+        
+        .data-table tr:hover {
+            background-color: var(--pale-green);
+        }
+        
+        .editable {
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            border: 1px dashed transparent;
+        }
+        
+        .editable:hover {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px dashed var(--primary-green);
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: var(--medium-gray);
+            border-radius: 5px;
+            margin-top: 8px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 5px;
+            transition: width 0.5s ease;
+            background: linear-gradient(90deg, var(--light-green), var(--primary-green));
+        }
+        
+        .gap-indicator {
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .gap-positive {
+            color: var(--primary-green);
+        }
+        
+        .gap-negative {
+            color: #e74c3c;
+        }
+        
+        .page-title {
+            margin-bottom: 25px;
+            color: var(--dark-text);
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--primary-green);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .page-title h2 {
+            font-size: 26px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark-green);
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(50, 50, 93, 0.11), 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(50, 50, 93, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+        }
+        
+        .btn-back {
+            background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+        }
+        
+        .btn-block {
+            display: block;
+            width: 100%;
+            text-align: center;
+            justify-content: center;
+        }
+        
+        .data-entry-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .data-entry-table th, .data-entry-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .data-entry-table th {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            font-weight: 600;
+        }
+        
+        .data-entry-table input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 6px;
+            font-size: 16px;
+            transition: var(--transition);
+        }
+        
+        .data-entry-table input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(46, 204, 113, 0.2);
+            outline: none;
+        }
+        
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-around;
+            padding: 15px 0;
+            z-index: 1000;
+            transition: var(--transition);
+        }
+        
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: #7f8c8d;
+            text-decoration: none;
+            min-width: 80px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .nav-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            opacity: 0;
+            transition: var(--transition);
+            z-index: -1;
+        }
+        
+        .nav-item:hover {
+            color: var(--white);
+            transform: translateY(-3px);
+        }
+        
+        .nav-item:hover::before {
+            opacity: 1;
+        }
+        
+        .nav-item.active {
+            color: var(--white);
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+        }
+        
+        .nav-icon {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .nav-label {
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .overview-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-green);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .overview-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-green), var(--dark-green));
+        }
+        
+        .overview-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .overview-card h3 {
+            margin-bottom: 15px;
+            color: var(--dark-green);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+            color: var(--dark-green);
+        }
+        
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .kpi-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .badge-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: var(--dark-green);
+        }
+        
+        .badge-warning {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+        }
+        
+        .badge-danger {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+        
+        .mini-chart {
+            height: 150px;
+            margin-top: 15px;
+        }
+        
+        .performance-meter {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .meter-label {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .meter-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark-green);
+        }
+        
+        .trend-indicator {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .trend-up {
+            color: var(--primary-green);
+        }
+        
+        .trend-down {
+            color: #e74c3c;
+        }
+        
+        .trend-neutral {
+            color: #7f8c8d;
+        }
+        
+        .highlight-card {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            box-shadow: var(--card-shadow);
+            margin-bottom: 25px;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .highlight-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        }
+        
+        .highlight-card h3 {
+            margin-bottom: 15px;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .highlight-card .stat-value {
+            font-size: 36px;
+            margin: 10px 0;
+            color: var(--white);
+        }
+        
+        .highlight-card .stat-label {
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .metric-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 15px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            text-align: center;
+            border-top: 3px solid var(--primary-green);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 5px 0;
+            color: var(--dark-green);
+        }
+        
+        .metric-label {
+            color: #7f8c8d;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .compact-performance {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--card-shadow);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .performance-percentage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            border-radius: var(--border-radius);
+            min-width: 120px;
+        }
+        
+        .percentage-value {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .percentage-label {
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        
+        .comparison-chart-container {
+            flex: 1;
+            height: 120px;
+            margin-left: 20px;
+        }
+        
+        /* New styles for the location table */
+        .location-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .location-table th, .location-table td {
+            padding: 15px;
+            text-align: center;
+            border-bottom: 1px solid var(--medium-gray);
+        }
+        
+        .location-table th {
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: var(--white);
+            font-weight: 600;
+        }
+        
+        .location-table tr:nth-child(even) {
+            background-color: var(--light-gray);
+        }
+        
+        .location-table tr:hover {
+            background-color: var(--pale-green);
+        }
+        
+        .location-table .total-row {
+            font-weight: bold;
+            background-color: rgba(46, 204, 113, 0.1);
+        }
+        
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        /* Edit mode styles */
+        .edit-mode .location-table td {
+            position: relative;
+        }
+        
+        .edit-mode .location-table td:not(:first-child)::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(46, 204, 113, 0.05);
+            pointer-events: none;
+        }
+        
+        .location-input {
+            width: 100%;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            padding: 5px;
+            text-align: center;
+            background: transparent;
+            font-size: 14px;
+        }
+        
+        .location-input:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+        }
+        
+        /* Location name editing */
+        .location-name-cell {
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 5px;
+            transition: background-color 0.2s;
+            border: 1px dashed transparent;
+        }
+        
+        .location-name-cell:hover {
+            background-color: rgba(46, 204, 113, 0.1);
+            border: 1px dashed var(--primary-green);
+        }
+        
+        .location-name-input {
+            width: 100%;
+            border: 1px solid var(--medium-gray);
+            border-radius: 4px;
+            padding: 5px;
+            text-align: center;
+            background: transparent;
+            font-size: 14px;
+        }
+        
+        .location-name-input:focus {
+            outline: none;
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.2);
+        }
+        
+        /* Infographic styles */
+        .infographic-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        
+        .infographic-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: var(--card-shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .infographic-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+        }
+        
+        .infographic-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 10px;
+        }
+        
+        .infographic-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+        
+        .infographic-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark-green);
+        }
+        
+        .kpi-performance-list {
+            list-style: none;
+            margin-top: 15px;
+        }
+        
+        .kpi-performance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .kpi-performance-item:last-child {
+            border-bottom: none;
+        }
+        
+        .kpi-name {
+            flex: 1;
+            font-weight: 500;
+        }
+        
+        .kpi-achievement {
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .achievement-high {
+            color: var(--primary-green);
+        }
+        
+        .achievement-medium {
+            color: #f39c12;
+        }
+        
+        .achievement-low {
+            color: #e74c3c;
+        }
+        
+        .performance-meter-large {
+            height: 20px;
+            background-color: var(--light-gray);
+            border-radius: 10px;
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .meter-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            background: linear-gradient(90deg, var(--light-green), var(--primary-green));
+        }
+        
+        .meter-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .stat-comparison {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+        }
+        
+        .stat-box {
+            text-align: center;
+            flex: 1;
+            padding: 10px;
+        }
+        
+        .stat-box-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .stat-box-label {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+        
+        .performance-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .indicator-high {
+            background-color: var(--primary-green);
+        }
+        
+        .indicator-medium {
+            background-color: #f39c12;
+        }
+        
+        .indicator-low {
+            background-color: #e74c3c;
+        }
+        
+        .trend-card {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .trend-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 10px 0;
+        }
+        
+        .trend-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .gap-analysis {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .gap-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--light-gray);
+            border-radius: 6px;
+        }
+        
+        .gap-positive {
+            color: var(--primary-green);
+            font-weight: 600;
+        }
+        
+        .gap-negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-container {
+                padding: 15px;
+                padding-bottom: 90px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+            
+            .page-title {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .overview-grid, .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .data-table, .data-entry-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .nav-label {
+                font-size: 11px;
+            }
+            
+            .nav-item {
+                min-width: 70px;
+                padding: 8px 10px;
+            }
+            
+            .metric-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .compact-performance {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .comparison-chart-container {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .location-table {
+                display: block;
+                overflow-x: auto;
+            }
+            
+            .infographic-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-chart-line"></i> KPI Performance Dashboard</h1>
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="current-date" id="currentDate"></div>
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <div class="dashboard-container">
+        <!-- Data Entry Page -->
+        <div id="data-entry" class="page">
+            <div class="page-title">
+                <h2><i class="fas fa-edit"></i> Data Entry</h2>
+                <button class="btn btn-back" id="backFromDataEntry">
+                    <i class="fas fa-arrow-left"></i> Back to Overview
+                </button>
+            </div>
+            
+            <div class="card">
+                <p>Enter or update KPI data in the table below. Click Save when finished.</p>
+                
+                <table class="data-entry-table" id="dataEntryTable">
+                    <thead>
+                        <tr>
+                            <th>KPI Name</th>
+                            <th>Target</th>
+                            <th>Actual</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 20px; display: flex; gap: 10px;">
+                    <button class="btn btn-success" id="addKPI">
+                        <i class="fas fa-plus"></i> Add New KPI
+                    </button>
+                    <button class="btn" id="saveData">
+                        <i class="fas fa-save"></i> Save All Data
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Performance Overview Page -->
+        <div id="performance-overview" class="page active">
+            <div class="page-title">
+                <h2><i class="fas fa-tachometer-alt"></i> Performance Overview</h2>
+                <button class="btn btn-back" id="backFromOverview">
+                    <i class="fas fa-arrow-left"></i> Back to Menu
+                </button>
+            </div>
+            
+            <!-- Compact Performance Display -->
+            <div class="compact-performance">
+                <div class="performance-percentage">
+                    <div class="percentage-value" id="overallPerformance">0%</div>
+                    <div class="percentage-label">Overall Achievement</div>
+                </div>
+                <div class="comparison-chart-container">
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+            </div>
+            
+            <!-- Location Data Table -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>Location Performance Summary</h3>
+                    <button class="btn" id="toggleEditMode">
+                        <i class="fas fa-edit"></i> Edit Data
+                    </button>
+                </div>
+                <table class="location-table" id="locationTable">
+                    <thead>
+                        <tr>
+                            <th>Row Labels (Location)</th>
+                            <th>Accessories (KSh)</th>
+                            <th>Airtime (KSh)</th>
+                            <th>Lines (Units)</th>
+                            <th>Offer Phones (Units)</th>
+                            <th>Routers (Units)</th>
+                            <th>Mpesa (KSh)</th>
+                            <th>Simba Phones (Units)</th>
+                            <th>Simex (Units)</th>
+                            <th>Interactions (Units)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Table rows will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Detailed Data Page -->
+        <div id="detailed-data" class="page">
+            <div class="page-title">
+                <h2><i class="fas fa-table"></i> Detailed Data</h2>
+                <button class="btn btn-back" id="backFromDetailed">
+                    <i class="fas fa-arrow-left"></i> Back to Overview
+                </button>
+            </div>
+            
+            <div class="card">
+                <h3>KPI Performance Details</h3>
+                <table class="data-table" id="dataTable">
+                    <thead>
+                        <tr>
+                            <th>KPI</th>
+                            <th>Target</th>
+                            <th>Actual</th>
+                            <th>Achievement %</th>
+                            <th>Gap</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+                
+                <p class="edit-notice" style="margin-top: 15px; text-align: center; color: #7f8c8d;">
+                    <i class="fas fa-info-circle"></i> Click on any Target or Actual value to edit it
+                </p>
+            </div>
+        </div>
+        
+        <!-- Performance Summary Page -->
+        <div id="performance-summary" class="page">
+            <div class="page-title">
+                <h2><i class="fas fa-chart-pie"></i> Performance Summary</h2>
+                <button class="btn btn-back" id="backFromSummary">
+                    <i class="fas fa-arrow-left"></i> Back to Overview
+                </button>
+            </div>
+            
+            <div class="summary-category strong">
+                <h3><i class="fas fa-check-circle"></i> Strong Areas (≥80% Achievement)</h3>
+                <ul class="summary-list" id="strongList">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+            
+            <div class="summary-category average">
+                <h3><i class="fas fa-exclamation-circle"></i> Average Areas (50-79% Achievement)</h3>
+                <ul class="summary-list" id="averageList">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+            
+            <div class="summary-category weak">
+                <h3><i class="fas fa-times-circle"></i> Areas Needing Improvement (<50% Achievement)</h3>
+                <ul class="summary-list" id="weakList">
+                    <!-- Will be populated by JavaScript -->
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Analytics Page -->
+        <div id="analytics" class="page">
+            <div class="page-title">
+                <h2><i class="fas fa-chart-bar"></i> Analytics & Infographics</h2>
+                <button class="btn btn-back" id="backFromAnalytics">
+                    <i class="fas fa-arrow-left"></i> Back to Overview
+                </button>
+            </div>
+            
+            <!-- Infographic Section -->
+            <div class="infographic-grid">
+                <!-- Overall Performance Card -->
+                <div class="infographic-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div class="infographic-title">Overall Performance</div>
+                    </div>
+                    <div class="performance-meter-large">
+                        <div class="meter-fill" id="overallMeter"></div>
+                    </div>
+                    <div class="meter-labels">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="stat-comparison">
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="totalTarget">0</div>
+                            <div class="stat-box-label">Total Target</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="totalActual">0</div>
+                            <div class="stat-box-label">Total Actual</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-box-value" id="achievementRate">0%</div>
+                            <div class="stat-box-label">Achievement</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Distribution Card -->
+                <div class="infographic-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="infographic-title">Performance Distribution</div>
+                    </div>
+                    <div class="performance-indicator">
+                        <div class="indicator-dot indicator-high"></div>
+                        <span>Strong (≥80%)</span>
+                        <span id="strongCount" class="kpi-achievement achievement-high">0</span>
+                    </div>
+                    <div class="performance-indicator">
+                        <div class="indicator-dot indicator-medium"></div>
+                        <span>Average (50-79%)</span>
+                        <span id="averageCount" class="kpi-achievement achievement-medium">0</span>
+                    </div>
+                    <div class="performance-indicator">
+                        <div class="indicator-dot indicator-low"></div>
+                        <span>Needs Improvement (<50%)</span>
+                        <span id="weakCount" class="kpi-achievement achievement-low">0</span>
+                    </div>
+                </div>
+                
+                <!-- Top Performers Card -->
+                <div class="infographic-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon">
+                            <i class="fas fa-trophy"></i>
+                        </div>
+                        <div class="infographic-title">Top Performers</div>
+                    </div>
+                    <ul class="kpi-performance-list" id="topPerformersList">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+                
+                <!-- Areas Needing Attention Card -->
+                <div class="infographic-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="infographic-title">Areas Needing Attention</div>
+                    </div>
+                    <ul class="kpi-performance-list" id="attentionList">
+                        <!-- Will be populated by JavaScript -->
+                    </ul>
+                </div>
+                
+                <!-- Gap Analysis Card -->
+                <div class="infographic-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div class="infographic-title">Gap Analysis</div>
+                    </div>
+                    <div class="gap-analysis" id="gapAnalysis">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Performance Trend Card -->
+                <div class="trend-card">
+                    <div class="infographic-header">
+                        <div class="infographic-icon" style="background: rgba(255,255,255,0.2);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="infographic-title" style="color: white;">Performance Trend</div>
+                    </div>
+                    <div class="trend-value" id="performanceTrend">0%</div>
+                    <div class="trend-label">Compared to Previous Period</div>
+                </div>
+            </div>
+            
+            <!-- Charts Section -->
+            <div class="analytics-grid">
+                <div class="card">
+                    <h3>Performance Distribution</h3>
+                    <div class="chart-container">
+                        <canvas id="performanceDistributionChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Target vs Actual</h3>
+                    <div class="chart-container">
+                        <canvas id="targetActualChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Performance Summary</h3>
+                    <div class="chart-container">
+                        <canvas id="performanceSummaryChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Areas Needing Attention</h3>
+                    <div class="chart-container">
+                        <canvas id="attentionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Location Performance Comparison</h3>
+                <div class="chart-container">
+                    <canvas id="locationPerformanceChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Product Category Performance</h3>
+                <div class="chart-container">
+                    <canvas id="productCategoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" data-page="performance-overview">
+            <i class="fas fa-tachometer-alt nav-icon"></i>
+            <span class="nav-label">Overview</span>
+        </div>
+        <div class="nav-item" data-page="data-entry">
+            <i class="fas fa-edit nav-icon"></i>
+            <span class="nav-label">Data Entry</span>
+        </div>
+        <div class="nav-item" data-page="analytics">
+            <i class="fas fa-chart-bar nav-icon"></i>
+            <span class="nav-label">Analytics</span>
+        </div>
+        <div class="nav-item" data-page="detailed-data">
+            <i class="fas fa-table nav-icon"></i>
+            <span class="nav-label">Details</span>
+        </div>
+        <div class="nav-item" data-page="performance-summary">
+            <i class="fas fa-chart-pie nav-icon"></i>
+            <span class="nav-label">Summary</span>
+        </div>
+    </div>
+
+    <script>
+        // Initial data
+        let kpiData = [
+            { kpi: "Sinba planes", target: 53, actual: 25 },
+            { kpi: "Accessories", target: 26, actual: 9 },
+            { kpi: "LNM", target: 87, actual: 33 },
+            { kpi: "Raufers", target: 12, actual: 5 },
+            { kpi: "Interactions", target: 1876, actual: 829 },
+            { kpi: "Shop lines", target: 243, actual: 113 },
+            { kpi: "BA lines", target: 450, actual: 0 },
+            { kpi: "Simex", target: 158, actual: 79 },
+            { kpi: "LNM", target: 70, actual: 0 },
+            { kpi: "Shop airline", target: 198718, actual: 131159 },
+            { kpi: "DSA airline", target: 306446, actual: 181450 },
+            { kpi: "Mpesa", target: 176299, actual: 125743 },
+            { kpi: "Shop audit", target: 5, actual: 5 },
+            { kpi: "van BA", target: 0, actual: 0 },
+            { kpi: "EBU DSA", target: 0, actual: 0 }
+        ];
+
+        // Location data
+        let locationData = [
+            { location: "Prudential", accessories: 6, airtime: 69201, lines: 62, offerPhones: 5, routers: 0, mpesa: 74419, simbaPhones: 5, simex: 47, interactions: 317 },
+            { location: "Machakos", accessories: 4, airtime: 10531, lines: 6, offerPhones: 2, routers: 0, mpesa: 25234, simbaPhones: 4, simex: 4, interactions: 50 },
+            { location: "Nkubu", accessories: 7, airtime: 7522, lines: 19, offerPhones: 15, routers: 1, mpesa: 15701, simbaPhones: 12, simex: 8, interactions: 216 },
+            { location: "Chuka", accessories: 0, airtime: 6552, lines: 34, offerPhones: 23, routers: 2, mpesa: 7787, simbaPhones: 17, simex: 33, interactions: 193 },
+            { location: "Maua", accessories: 0, airtime: 37417, lines: 6, offerPhones: 11, routers: 2, mpesa: 5449, simbaPhones: 7, simex: 7, interactions: 48 }
+        ];
+
+        // Load data from localStorage if available
+        function loadDataFromStorage() {
+            const savedKpiData = localStorage.getItem('kpiDashboard_kpiData');
+            const savedLocationData = localStorage.getItem('kpiDashboard_locationData');
+            
+            if (savedKpiData) {
+                kpiData = JSON.parse(savedKpiData);
+            }
+            
+            if (savedLocationData) {
+                locationData = JSON.parse(savedLocationData);
+            }
+        }
+
+        // Save data to localStorage
+        function saveDataToStorage() {
+            localStorage.setItem('kpiDashboard_kpiData', JSON.stringify(kpiData));
+            localStorage.setItem('kpiDashboard_locationData', JSON.stringify(locationData));
+        }
+
+        // Set current date
+        const currentDateElement = document.getElementById('currentDate');
+        let currentDate = new Date();
+        
+        function updateDateDisplay() {
+            currentDateElement.textContent = currentDate.toLocaleDateString('en-US', { 
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+            });
+        }
+        
+        updateDateDisplay();
+
+        // Date editing functionality
+        currentDateElement.addEventListener('click', function() {
+            const dateInput = document.createElement('input');
+            dateInput.type = 'date';
+            dateInput.className = 'date-input';
+            dateInput.valueAsDate = currentDate;
+            
+            // Replace the current date display with the input
+            currentDateElement.replaceWith(dateInput);
+            dateInput.focus();
+            
+            // Handle date change
+            dateInput.addEventListener('change', function() {
+                currentDate = new Date(this.value);
+                updateDateDisplay();
+                // Put the updated date element back
+                dateInput.replaceWith(currentDateElement);
+            });
+            
+            // Handle blur (clicking away)
+            dateInput.addEventListener('blur', function() {
+                updateDateDisplay();
+                dateInput.replaceWith(currentDateElement);
+            });
+        });
+
+        // Dark/Light mode toggle
+        const themeToggle = document.getElementById('themeToggle');
+        let isDarkMode = false;
+        
+        themeToggle.addEventListener('click', function() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            
+            // Update button text and icon
+            if (isDarkMode) {
+                themeToggle.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+            } else {
+                themeToggle.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+            }
+            
+            // Update charts for theme change
+            updateCharts();
+        });
+
+        // Navigation functionality
+        function navigateToPage(pageId) {
+            // Remove active class from all nav items and pages
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            
+            // Add active class to clicked nav item and corresponding page
+            document.querySelector(`.nav-item[data-page="${pageId}"]`).classList.add('active');
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update the dashboard when switching to pages that need it
+            if (pageId !== 'data-entry') {
+                updateDashboard();
+            }
+        }
+
+        // Bottom navigation event listeners
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                const pageId = this.getAttribute('data-page');
+                navigateToPage(pageId);
+            });
+        });
+
+        // Back button event listeners
+        document.getElementById('backFromDataEntry').addEventListener('click', () => navigateToPage('performance-overview'));
+        document.getElementById('backFromOverview').addEventListener('click', () => navigateToPage('performance-overview'));
+        document.getElementById('backFromDetailed').addEventListener('click', () => navigateToPage('performance-overview'));
+        document.getElementById('backFromSummary').addEventListener('click', () => navigateToPage('performance-overview'));
+        document.getElementById('backFromAnalytics').addEventListener('click', () => navigateToPage('performance-overview'));
+
+        // Calculate achievement percentage
+        function calculateAchievement(target, actual) {
+            if (target === 0) return actual > 0 ? 100 : 0;
+            return Math.min(100, (actual / target) * 100);
+        }
+
+        // Calculate gap
+        function calculateGap(target, actual) {
+            return actual - target;
+        }
+
+        // Categorize performance
+        function categorizePerformance(achievement) {
+            if (achievement >= 80) return 'strong';
+            if (achievement >= 50) return 'average';
+            return 'weak';
+        }
+
+        // Format numbers with commas
+        function formatNumber(num) {
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        }
+
+        // Update the dashboard
+        function updateDashboard() {
+            // Update data entry table
+            updateDataEntryTable();
+            
+            // Update detailed data table
+            updateDataTable();
+            
+            // Update summary lists
+            updateSummaryLists();
+            
+            // Update performance overview
+            updatePerformanceOverview();
+            
+            // Update location table
+            updateLocationTable();
+            
+            // Update charts
+            updateCharts();
+            
+            // Update infographics
+            updateInfographics();
+            
+            // Reattach event listeners for editable cells
+            attachEditListeners();
+            
+            // Save data to localStorage
+            saveDataToStorage();
+        }
+
+        // Update data entry table
+        function updateDataEntryTable() {
+            const tableBody = document.querySelector('#dataEntryTable tbody');
+            tableBody.innerHTML = '';
+            
+            kpiData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>
+                        <input type="text" value="${item.kpi}" data-index="${index}" data-field="kpi">
+                    </td>
+                    <td>
+                        <input type="number" value="${item.target}" data-index="${index}" data-field="target">
+                    </td>
+                    <td>
+                        <input type="number" value="${item.actual}" data-index="${index}" data-field="actual">
+                    </td>
+                    <td>
+                        <button class="btn btn-danger" onclick="deleteKPI(${index})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Delete a KPI
+        function deleteKPI(index) {
+            if (confirm(`Are you sure you want to delete "${kpiData[index].kpi}"?`)) {
+                kpiData.splice(index, 1);
+                updateDataEntryTable();
+                saveDataToStorage();
+            }
+        }
+
+        // Update detailed data table
+        function updateDataTable() {
+            const tableBody = document.querySelector('#dataTable tbody');
+            tableBody.innerHTML = '';
+            
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const performance = categorizePerformance(achievement);
+                const gap = calculateGap(item.target, item.actual);
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.kpi}</td>
+                    <td class="editable" data-kpi="${item.kpi}" data-type="target">${formatNumber(item.target)}</td>
+                    <td class="editable" data-kpi="${item.kpi}" data-type="actual">${formatNumber(item.actual)}</td>
+                    <td>
+                        <div>${achievement.toFixed(1)}%</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${achievement}%;"></div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="gap-indicator ${gap >= 0 ? 'gap-positive' : 'gap-negative'}">
+                            <i class="fas ${gap >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'}"></i>
+                            ${gap >= 0 ? '+' : ''}${formatNumber(gap)}
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Update summary lists
+        function updateSummaryLists() {
+            const strongList = document.getElementById('strongList');
+            const averageList = document.getElementById('averageList');
+            const weakList = document.getElementById('weakList');
+            
+            strongList.innerHTML = '';
+            averageList.innerHTML = '';
+            weakList.innerHTML = '';
+            
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const performance = categorizePerformance(achievement);
+                
+                const listItem = document.createElement('li');
+                
+                // Add badge based on performance
+                let badgeClass = '';
+                if (performance === 'strong') badgeClass = 'badge-success';
+                else if (performance === 'average') badgeClass = 'badge-warning';
+                else badgeClass = 'badge-danger';
+                
+                listItem.innerHTML = `
+                    <span>
+                        ${item.kpi}
+                        <span class="kpi-badge ${badgeClass}">${performance.toUpperCase()}</span>
+                    </span>
+                    <span>${achievement.toFixed(1)}%</span>
+                `;
+                
+                if (performance === 'strong') {
+                    strongList.appendChild(listItem);
+                } else if (performance === 'average') {
+                    averageList.appendChild(listItem);
+                } else {
+                    weakList.appendChild(listItem);
+                }
+            });
+        }
+
+        // Update performance overview
+        function updatePerformanceOverview() {
+            // Calculate stats
+            let onTarget = 0;
+            let needsAttention = 0;
+            let totalAchievement = 0;
+            let totalTarget = 0;
+            let totalActual = 0;
+            
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                totalAchievement += achievement;
+                totalTarget += item.target;
+                totalActual += item.actual;
+                
+                if (achievement >= 80) {
+                    onTarget++;
+                } else if (achievement < 50) {
+                    needsAttention++;
+                }
+            });
+            
+            // Update overview cards
+            const overallPerformance = (totalAchievement / kpiData.length).toFixed(1);
+            document.getElementById('overallPerformance').textContent = overallPerformance + '%';
+        }
+
+        // Update location table
+        function updateLocationTable() {
+            const tableBody = document.querySelector('#locationTable tbody');
+            tableBody.innerHTML = '';
+            
+            // Calculate totals
+            const totals = {
+                accessories: 0,
+                airtime: 0,
+                lines: 0,
+                offerPhones: 0,
+                routers: 0,
+                mpesa: 0,
+                simbaPhones: 0,
+                simex: 0,
+                interactions: 0
+            };
+            
+            // Add location rows
+            locationData.forEach((location, index) => {
+                const row = document.createElement('tr');
+                
+                // Update totals
+                totals.accessories += location.accessories;
+                totals.airtime += location.airtime;
+                totals.lines += location.lines;
+                totals.offerPhones += location.offerPhones;
+                totals.routers += location.routers;
+                totals.mpesa += location.mpesa;
+                totals.simbaPhones += location.simbaPhones;
+                totals.simex += location.simex;
+                totals.interactions += location.interactions;
+                
+                const isEditMode = document.getElementById('locationTable').parentElement.classList.contains('edit-mode');
+                
+                row.innerHTML = `
+                    <td class="${isEditMode ? 'location-name-cell' : ''}" data-location="${index}" data-field="location">
+                        ${isEditMode ? 
+                            `<input type="text" class="location-name-input" value="${location.location}" data-location="${index}" data-field="location">` : 
+                            location.location}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="accessories">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.accessories}" data-location="${index}" data-field="accessories">` : 
+                            formatNumber(location.accessories)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="airtime">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.airtime}" data-location="${index}" data-field="airtime">` : 
+                            formatNumber(location.airtime)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="lines">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.lines}" data-location="${index}" data-field="lines">` : 
+                            formatNumber(location.lines)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="offerPhones">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.offerPhones}" data-location="${index}" data-field="offerPhones">` : 
+                            formatNumber(location.offerPhones)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="routers">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.routers}" data-location="${index}" data-field="routers">` : 
+                            formatNumber(location.routers)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="mpesa">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.mpesa}" data-location="${index}" data-field="mpesa">` : 
+                            formatNumber(location.mpesa)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="simbaPhones">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.simbaPhones}" data-location="${index}" data-field="simbaPhones">` : 
+                            formatNumber(location.simbaPhones)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="simex">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.simex}" data-location="${index}" data-field="simex">` : 
+                            formatNumber(location.simex)}
+                    </td>
+                    <td class="${isEditMode ? 'location-cell' : ''}" data-location="${index}" data-field="interactions">
+                        ${isEditMode ? 
+                            `<input type="number" class="location-input" value="${location.interactions}" data-location="${index}" data-field="interactions">` : 
+                            formatNumber(location.interactions)}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            // Add totals row
+            const totalsRow = document.createElement('tr');
+            totalsRow.className = 'total-row';
+            totalsRow.innerHTML = `
+                <td>Total Sum</td>
+                <td>${formatNumber(totals.accessories)}</td>
+                <td>${formatNumber(totals.airtime)}</td>
+                <td>${formatNumber(totals.lines)}</td>
+                <td>${formatNumber(totals.offerPhones)}</td>
+                <td>${formatNumber(totals.routers)}</td>
+                <td>${formatNumber(totals.mpesa)}</td>
+                <td>${formatNumber(totals.simbaPhones)}</td>
+                <td>${formatNumber(totals.simex)}</td>
+                <td>${formatNumber(totals.interactions)}</td>
+            `;
+            tableBody.appendChild(totalsRow);
+            
+            // Attach edit listeners if in edit mode
+            if (document.getElementById('locationTable').parentElement.classList.contains('edit-mode')) {
+                attachLocationEditListeners();
+            }
+        }
+
+        // Toggle location table edit mode
+        document.getElementById('toggleEditMode').addEventListener('click', function() {
+            const locationCard = document.getElementById('locationTable').parentElement;
+            const isEditMode = locationCard.classList.contains('edit-mode');
+            
+            if (isEditMode) {
+                // Exit edit mode
+                locationCard.classList.remove('edit-mode');
+                this.innerHTML = '<i class="fas fa-edit"></i> Edit Data';
+                updateLocationTable(); // Refresh to remove inputs
+            } else {
+                // Enter edit mode
+                locationCard.classList.add('edit-mode');
+                this.innerHTML = '<i class="fas fa-save"></i> Save Changes';
+                updateLocationTable(); // Refresh to add inputs
+            }
+        });
+
+        // Attach event listeners for location table editing
+        function attachLocationEditListeners() {
+            const locationInputs = document.querySelectorAll('.location-input, .location-name-input');
+            
+            locationInputs.forEach(input => {
+                input.addEventListener('change', function() {
+                    const locationIndex = parseInt(this.getAttribute('data-location'));
+                    const field = this.getAttribute('data-field');
+                    const newValue = field === 'location' ? this.value : parseInt(this.value) || 0;
+                    
+                    locationData[locationIndex][field] = newValue;
+                    updateLocationTable();
+                    saveDataToStorage();
+                });
+            });
+        }
+
+        // Update infographics
+        function updateInfographics() {
+            // Calculate overall performance
+            let totalTarget = 0;
+            let totalActual = 0;
+            let totalAchievement = 0;
+            
+            kpiData.forEach(item => {
+                totalTarget += item.target;
+                totalActual += item.actual;
+                totalAchievement += calculateAchievement(item.target, item.actual);
+            });
+            
+            const overallAchievement = totalTarget > 0 ? (totalActual / totalTarget) * 100 : 0;
+            const averageAchievement = kpiData.length > 0 ? totalAchievement / kpiData.length : 0;
+            
+            // Update overall performance meter
+            document.getElementById('overallMeter').style.width = `${overallAchievement}%`;
+            document.getElementById('totalTarget').textContent = formatNumber(totalTarget);
+            document.getElementById('totalActual').textContent = formatNumber(totalActual);
+            document.getElementById('achievementRate').textContent = `${overallAchievement.toFixed(1)}%`;
+            
+            // Update performance distribution
+            let strongCount = 0, averageCount = 0, weakCount = 0;
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const performance = categorizePerformance(achievement);
+                
+                if (performance === 'strong') strongCount++;
+                else if (performance === 'average') averageCount++;
+                else weakCount++;
+            });
+            
+            document.getElementById('strongCount').textContent = strongCount;
+            document.getElementById('averageCount').textContent = averageCount;
+            document.getElementById('weakCount').textContent = weakCount;
+            
+            // Update top performers
+            const topPerformersList = document.getElementById('topPerformersList');
+            topPerformersList.innerHTML = '';
+            
+            // Sort KPIs by achievement (descending)
+            const sortedByAchievement = [...kpiData].sort((a, b) => {
+                return calculateAchievement(b.target, b.actual) - calculateAchievement(a.target, a.actual);
+            });
+            
+            // Show top 5 performers
+            sortedByAchievement.slice(0, 5).forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const listItem = document.createElement('li');
+                listItem.className = 'kpi-performance-item';
+                
+                let achievementClass = 'achievement-medium';
+                if (achievement >= 80) achievementClass = 'achievement-high';
+                else if (achievement < 50) achievementClass = 'achievement-low';
+                
+                listItem.innerHTML = `
+                    <span class="kpi-name">${item.kpi}</span>
+                    <span class="kpi-achievement ${achievementClass}">${achievement.toFixed(1)}%</span>
+                `;
+                topPerformersList.appendChild(listItem);
+            });
+            
+            // Update areas needing attention
+            const attentionList = document.getElementById('attentionList');
+            attentionList.innerHTML = '';
+            
+            // Get KPIs with achievement below 50%
+            const attentionKPIs = kpiData.filter(item => calculateAchievement(item.target, item.actual) < 50)
+                .slice(0, 5); // Limit to top 5
+            
+            attentionKPIs.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const listItem = document.createElement('li');
+                listItem.className = 'kpi-performance-item';
+                
+                listItem.innerHTML = `
+                    <span class="kpi-name">${item.kpi}</span>
+                    <span class="kpi-achievement achievement-low">${achievement.toFixed(1)}%</span>
+                `;
+                attentionList.appendChild(listItem);
+            });
+            
+            // Update gap analysis
+            const gapAnalysis = document.getElementById('gapAnalysis');
+            gapAnalysis.innerHTML = '';
+            
+            // Calculate largest gaps (positive and negative)
+            const gaps = kpiData.map(item => {
+                return {
+                    kpi: item.kpi,
+                    gap: calculateGap(item.target, item.actual),
+                    achievement: calculateAchievement(item.target, item.actual)
+                };
+            });
+            
+            // Sort by absolute gap (largest first)
+            gaps.sort((a, b) => Math.abs(b.gap) - Math.abs(a.gap));
+            
+            // Show top 5 gaps
+            gaps.slice(0, 5).forEach(item => {
+                const gapItem = document.createElement('div');
+                gapItem.className = 'gap-item';
+                
+                gapItem.innerHTML = `
+                    <span>${item.kpi}</span>
+                    <span class="${item.gap >= 0 ? 'gap-positive' : 'gap-negative'}">
+                        ${item.gap >= 0 ? '+' : ''}${formatNumber(item.gap)}
+                    </span>
+                `;
+                gapAnalysis.appendChild(gapItem);
+            });
+            
+            // Update performance trend (simulated - in a real app, this would compare to previous period)
+            document.getElementById('performanceTrend').textContent = `${averageAchievement.toFixed(1)}%`;
+        }
+
+        // Update all charts
+        function updateCharts() {
+            updateMainChart();
+            updateMiniCharts();
+            updateComparisonChart();
+            updateLocationCharts();
+        }
+
+        // Update main performance chart
+        function updateMainChart() {
+            const ctx = document.getElementById('performanceChart')?.getContext('2d');
+            if (!ctx) return;
+            
+            // Destroy existing chart if it exists
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+            
+            // Prepare data for chart
+            const labels = kpiData.map(item => item.kpi);
+            const targets = kpiData.map(item => item.target);
+            const actuals = kpiData.map(item => item.actual);
+            
+            // Create chart
+            window.performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Target',
+                            data: targets,
+                            backgroundColor: 'rgba(46, 204, 113, 0.7)',
+                            borderColor: 'rgba(46, 204, 113, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Actual',
+                            data: actuals,
+                            backgroundColor: 'rgba(163, 228, 163, 0.7)',
+                            borderColor: 'rgba(163, 228, 163, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Values'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += formatNumber(context.parsed.y);
+                                    return label;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update comparison chart (general comparison bar graph)
+        function updateComparisonChart() {
+            const ctx = document.getElementById('comparisonChart').getContext('2d');
+            
+            // Destroy existing chart if it exists
+            if (window.comparisonChart) {
+                window.comparisonChart.destroy();
+            }
+            
+            // Calculate performance by category
+            let strongCount = 0, averageCount = 0, weakCount = 0;
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const performance = categorizePerformance(achievement);
+                
+                if (performance === 'strong') strongCount++;
+                else if (performance === 'average') averageCount++;
+                else weakCount++;
+            });
+            
+            // Create chart
+            window.comparisonChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Strong', 'Average', 'Weak'],
+                    datasets: [{
+                        label: 'KPI Count',
+                        data: [strongCount, averageCount, weakCount],
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(243, 156, 18, 0.8)',
+                            'rgba(231, 76, 60, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(243, 156, 18, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update location-specific charts
+        function updateLocationCharts() {
+            // Location Performance Chart
+            const locationCtx = document.getElementById('locationPerformanceChart')?.getContext('2d');
+            if (!locationCtx) return;
+            
+            if (window.locationPerformanceChart) {
+                window.locationPerformanceChart.destroy();
+            }
+            
+            const locationLabels = locationData.map(loc => loc.location);
+            const locationInteractions = locationData.map(loc => loc.interactions);
+            
+            window.locationPerformanceChart = new Chart(locationCtx, {
+                type: 'bar',
+                data: {
+                    labels: locationLabels,
+                    datasets: [{
+                        label: 'Interactions',
+                        data: locationInteractions,
+                        backgroundColor: 'rgba(46, 204, 113, 0.8)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+            
+            // Product Category Chart
+            const productCtx = document.getElementById('productCategoryChart')?.getContext('2d');
+            if (!productCtx) return;
+            
+            if (window.productCategoryChart) {
+                window.productCategoryChart.destroy();
+            }
+            
+            // Calculate totals by product category
+            const productCategories = [
+                'Accessories', 'Airtime', 'Lines', 'Offer Phones', 
+                'Routers', 'Mpesa', 'Simba Phones', 'Simex'
+            ];
+            
+            const productTotals = [
+                locationData.reduce((sum, loc) => sum + loc.accessories, 0),
+                locationData.reduce((sum, loc) => sum + loc.airtime, 0),
+                locationData.reduce((sum, loc) => sum + loc.lines, 0),
+                locationData.reduce((sum, loc) => sum + loc.offerPhones, 0),
+                locationData.reduce((sum, loc) => sum + loc.routers, 0),
+                locationData.reduce((sum, loc) => sum + loc.mpesa, 0),
+                locationData.reduce((sum, loc) => sum + loc.simbaPhones, 0),
+                locationData.reduce((sum, loc) => sum + loc.simex, 0)
+            ];
+            
+            window.productCategoryChart = new Chart(productCtx, {
+                type: 'pie',
+                data: {
+                    labels: productCategories,
+                    datasets: [{
+                        data: productTotals,
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(52, 152, 219, 0.8)',
+                            'rgba(155, 89, 182, 0.8)',
+                            'rgba(241, 196, 15, 0.8)',
+                            'rgba(230, 126, 34, 0.8)',
+                            'rgba(231, 76, 60, 0.8)',
+                            'rgba(149, 165, 166, 0.8)',
+                            'rgba(52, 73, 94, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(52, 152, 219, 1)',
+                            'rgba(155, 89, 182, 1)',
+                            'rgba(241, 196, 15, 1)',
+                            'rgba(230, 126, 34, 1)',
+                            'rgba(231, 76, 60, 1)',
+                            'rgba(149, 165, 166, 1)',
+                            'rgba(52, 73, 94, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update mini charts for analytics
+        function updateMiniCharts() {
+            // Performance Summary Chart (Doughnut)
+            const summaryCtx = document.getElementById('performanceSummaryChart').getContext('2d');
+            
+            if (window.performanceSummaryChart) {
+                window.performanceSummaryChart.destroy();
+            }
+            
+            let strongCount = 0, averageCount = 0, weakCount = 0;
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                const performance = categorizePerformance(achievement);
+                
+                if (performance === 'strong') strongCount++;
+                else if (performance === 'average') averageCount++;
+                else weakCount++;
+            });
+            
+            window.performanceSummaryChart = new Chart(summaryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Strong', 'Average', 'Weak'],
+                    datasets: [{
+                        data: [strongCount, averageCount, weakCount],
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(243, 156, 18, 0.8)',
+                            'rgba(231, 76, 60, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(243, 156, 18, 1)',
+                            'rgba(231, 76, 60, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Target vs Actual Chart (Pie)
+            const targetActualCtx = document.getElementById('targetActualChart').getContext('2d');
+            
+            if (window.targetActualChart) {
+                window.targetActualChart.destroy();
+            }
+            
+            const totalTarget = kpiData.reduce((sum, item) => sum + item.target, 0);
+            const totalActual = kpiData.reduce((sum, item) => sum + item.actual, 0);
+            
+            window.targetActualChart = new Chart(targetActualCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Target', 'Actual'],
+                    datasets: [{
+                        data: [totalTarget, totalActual],
+                        backgroundColor: [
+                            'rgba(46, 204, 113, 0.8)',
+                            'rgba(163, 228, 163, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(163, 228, 163, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            
+            // Performance Distribution Chart (Bar)
+            const distributionCtx = document.getElementById('performanceDistributionChart').getContext('2d');
+            
+            if (window.performanceDistributionChart) {
+                window.performanceDistributionChart.destroy();
+            }
+            
+            // Count KPIs in different achievement ranges
+            const ranges = ['0-25%', '26-50%', '51-75%', '76-100%'];
+            const rangeCounts = [0, 0, 0, 0];
+            
+            kpiData.forEach(item => {
+                const achievement = calculateAchievement(item.target, item.actual);
+                if (achievement <= 25) rangeCounts[0]++;
+                else if (achievement <= 50) rangeCounts[1]++;
+                else if (achievement <= 75) rangeCounts[2]++;
+                else rangeCounts[3]++;
+            });
+            
+            window.performanceDistributionChart = new Chart(distributionCtx, {
+                type: 'bar',
+                data: {
+                    labels: ranges,
+                    datasets: [{
+                        label: 'KPIs',
+                        data: rangeCounts,
+                        backgroundColor: [
+                            'rgba(231, 76, 60, 0.8)',
+                            'rgba(243, 156, 18, 0.8)',
+                            'rgba(46, 204, 113, 0.6)',
+                            'rgba(46, 204, 113, 0.9)'
+                        ],
+                        borderColor: [
+                            'rgba(231, 76, 60, 1)',
+                            'rgba(243, 156, 18, 1)',
+                            'rgba(46, 204, 113, 1)',
+                            'rgba(46, 204, 113, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+            
+            // Attention Chart (Horizontal Bar)
+            const attentionCtx = document.getElementById('attentionChart').getContext('2d');
+            
+            if (window.attentionChart) {
+                window.attentionChart.destroy();
+            }
+            
+            // Get KPIs that need attention (below 50%)
+            const attentionKPIs = kpiData
+                .filter(item => calculateAchievement(item.target, item.actual) < 50)
+                .slice(0, 5) // Limit to top 5
+                .map(item => ({
+                    kpi: item.kpi,
+                    achievement: calculateAchievement(item.target, item.actual)
+                }));
+            
+            window.attentionChart = new Chart(attentionCtx, {
+                type: 'horizontalBar',
+                data: {
+                    labels: attentionKPIs.map(item => item.kpi),
+                    datasets: [{
+                        label: 'Achievement %',
+                        data: attentionKPIs.map(item => item.achievement),
+                        backgroundColor: 'rgba(231, 76, 60, 0.8)',
+                        borderColor: 'rgba(231, 76, 60, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+
+        // Attach event listeners for editable cells
+        function attachEditListeners() {
+            const editableCells = document.querySelectorAll('.editable');
+            
+            editableCells.forEach(cell => {
+                cell.addEventListener('click', function() {
+                    const kpi = this.getAttribute('data-kpi');
+                    const type = this.getAttribute('data-type');
+                    const currentValue = this.textContent.replace(/,/g, '');
+                    
+                    const newValue = prompt(`Enter new ${type} value for ${kpi}:`, currentValue);
+                    
+                    if (newValue !== null && !isNaN(newValue) && newValue.trim() !== '') {
+                        const numericValue = parseInt(newValue);
+                        
+                        // Find the item in kpiData and update it
+                        const item = kpiData.find(item => item.kpi === kpi);
+                        if (item) {
+                            item[type] = numericValue;
+                            updateDashboard();
+                            saveDataToStorage();
+                        }
+                    }
+                });
+            });
+        }
+
+        // Save data from the data entry form
+        document.getElementById('saveData').addEventListener('click', function() {
+            // Update kpiData from form inputs
+            const inputs = document.querySelectorAll('#dataEntryTable input');
+            
+            inputs.forEach(input => {
+                const index = parseInt(input.getAttribute('data-index'));
+                const field = input.getAttribute('data-field');
+                const value = field === 'kpi' ? input.value : parseInt(input.value);
+                
+                if (kpiData[index]) {
+                    kpiData[index][field] = value;
+                }
+            });
+            
+            alert('Data saved successfully!');
+            updateDashboard();
+            saveDataToStorage();
+            navigateToPage('performance-overview');
+        });
+
+        // Add new KPI row
+        document.getElementById('addKPI').addEventListener('click', function() {
+            kpiData.push({ kpi: "New KPI", target: 0, actual: 0 });
+            updateDataEntryTable();
+        });
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load data from localStorage
+            loadDataFromStorage();
+            
+            // Initialize the dashboard
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
